@@ -1,0 +1,6 @@
+{
+  "name": "TaapRaksha",
+  "description": "India’s Human Heat Risk Intelligence. National heat action intelligence and early warning command center covering all regions of India under NDMA and IMD protocols.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
