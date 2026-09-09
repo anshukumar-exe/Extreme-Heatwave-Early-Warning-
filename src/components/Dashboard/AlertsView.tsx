@@ -25,7 +25,7 @@ const containerVariants = {
   }
 };
 
-const itemVariants = {
+const itemVariants: any = {
   hidden: { opacity: 0, y: 12 },
   visible: {
     opacity: 1,
@@ -583,7 +583,7 @@ export const AlertsView: React.FC<AlertsViewProps> = ({
                   >
                     <option value="All Municipal Sectors">All Municipal Sectors (Citywide Broadcast)</option>
                     {wards.map((w) => (
-                      <option key={w.id} value={w.name}>{w.name} ({w.sector})</option>
+                      <option key={w.id} value={w.name}>{w.name} ({w.code})</option>
                     ))}
                   </select>
                 </div>

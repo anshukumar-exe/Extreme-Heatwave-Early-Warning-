@@ -57,6 +57,66 @@ export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // ML heatwave prediction state
+  const [isMlPanelOpen, setIsMlPanelOpen] = useState<boolean>(true);
+  const [mlLoading, setMlLoading] = useState<boolean>(false);
+  const [mlResult, setMlResult] = useState<{
+    Alert_Status: string;
+    Alert_Probability_Percent: number;
+    Prediction_Confidence: string;
+    State_UT: string;
+    Year: number;
+    Month: number;
+    Model: string;
+  } | null>(null);
+
+  const [mlInputs, setMlInputs] = useState({
+    Temperature_Mean_C: 32,
+    Temperature_Max_C: 42,
+    Temperature_Min_C: 26,
+    Relative_Humidity_Mean: 55,
+    Dew_Point_Mean_C: 21,
+    Precipitation_Sum_mm: 2,
+    Pressure_msl_Mean_hPa: 1000,
+    Wind_Speed_kmh: 12,
+    Wind_Direction_Dominant_deg: 90,
+    Wet_Bulb_Temp_C: 27,
+    Heat_Index_C: 44,
+    WBGT_C: 31,
+  });
+
+  const runMLPrediction = async () => {
+    setMlLoading(true);
+    try {
+      const response = await fetch('http://127.0.0.1:8001/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          State_UT: currentRegion.state,
+          Year: new Date().getFullYear(),
+          Month: new Date().getMonth() + 1,
+          ...mlInputs,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'Prediction request failed.');
+      }
+
+      setMlResult(data);
+      showToast(`ML Prediction: ${data.Alert_Status} • ${data.Alert_Probability_Percent}%`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to reach ML prediction server.';
+      showToast(`ML Prediction Error: ${message}`);
+      console.error('ML prediction error:', error);
+    } finally {
+      setMlLoading(false);
+    }
+  };
+
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => {
@@ -261,15 +321,18 @@ export default function App() {
     showToast('Incident marked as resolved.');
   };
 
-  const unreadAlertsCount = alerts.filter(a => !a.acknowledged && !a.resolved).length;
+  const unreadAlertsCount = alerts.filter(
+  a => !a.acknowledged && !a.resolved
+).length;
+
   const isDashboardView = viewMode !== 'landing';
 
   return (
-    <div className="bg-[#070a12] text-[#e5e7eb] min-h-screen flex flex-col font-body-md overflow-hidden selection:bg-[#3b82f6] selection:text-white">
+    <div className="bg-[#0a0b10] text-[#e5e7eb] min-h-screen flex flex-col font-body-md overflow-hidden selection:bg-[#3b82f6] selection:text-white">
       {/* Toast Notification Banner */}
       {toastMessage && (
-        <div className="fixed top-16 right-6 z-50 bg-[#0f172a] border border-blue-500/40 text-blue-100 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 font-medium text-[13px] backdrop-blur-md transition-all">
-          <span className="material-symbols-outlined text-[18px] text-blue-400">check_circle</span>
+        <div className="fixed top-20 right-6 z-50 bg-[#0f1422]/95 border border-[#3b82f6]/70 text-[#93c5fd] px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 animate-bounce font-data-point text-[13px]">
+          <span className="material-symbols-outlined text-[18px] text-[#3b82f6]">verified</span>
           <span>{toastMessage}</span>
         </div>
       )}
@@ -286,7 +349,7 @@ export default function App() {
         />
       )}
 
-      {/* Dashboard Views */}
+      {/* Screen 2: Integrated Command Dashboard Views */}
       {isDashboardView && (
         <div className="flex flex-col h-screen overflow-hidden">
           {/* Top App Bar */}
@@ -299,11 +362,11 @@ export default function App() {
             activeAlerts={alerts}
             operatorName={operatorName}
             onOpenDeployModal={() => setIsDeployModalOpen(true)}
-            onOpenHelplineModal={(type = 'helpline') => setHelplineModalType(type)}
+            onOpenHelplineModal={(type) => setHelplineModalType(type || 'helpline')}
             onDetectLocation={detectUserLocation}
             isLocating={isLocating}
             userCoords={userCoords}
-            onToggleMobileMenu={() => setIsMobileMenuOpen(prev => !prev)}
+            onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             isMobileMenuOpen={isMobileMenuOpen}
           />
 
@@ -316,71 +379,225 @@ export default function App() {
               unreadAlertsCount={unreadAlertsCount}
               onOpenDeployModal={() => setIsDeployModalOpen(true)}
               onOpenLogsModal={() => setIsLogsModalOpen(true)}
-              onOpenHelplineModal={(type = 'helpline') => setHelplineModalType(type)}
+              onOpenHelplineModal={(type) => setHelplineModalType(type || 'helpline')}
               isMobileOpen={isMobileMenuOpen}
               onCloseMobile={() => setIsMobileMenuOpen(false)}
             />
 
-            {/* View Switching with fluid entrance and exit transitions */}
-            <div className="flex-1 flex overflow-hidden relative">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={viewMode === 'dashboard' ? 'overview' : viewMode}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                  className="flex-1 flex overflow-hidden relative w-full h-full"
-                >
-                  {(viewMode === 'overview' || viewMode === 'dashboard') && (
-                    <DashboardOverview
-                      currentRegion={currentRegion}
-                      wards={wards}
-                      alerts={alerts}
-                      onNavigate={handleNavigate}
-                      onSelectWard={(w) => {
-                        setSelectedWard(w);
-                        setViewMode('map');
-                      }}
-                      onOpenDeployModal={() => setIsDeployModalOpen(true)}
-                    />
-                  )}
-
-                  {viewMode === 'map' && (
-                    <div className="flex-1 flex relative overflow-hidden w-full h-full">
-                      <InteractiveMap
-                        wards={wards}
-                        selectedWard={selectedWard}
-                        onSelectWard={handleSelectWard}
-                        sensors={sensors}
-                        forecastDayOffset={forecastDayOffset}
-                        onForecastDayChange={setForecastDayOffset}
-                        currentRegion={currentRegion}
-                        onDetectLocation={detectUserLocation}
-                        isLocating={isLocating}
-                        userLocationName={userLocationName}
-                        onOpenForecastView={() => handleNavigate('forecast')}
-                      />
-
-                      {/* Right Drawer (Screen 3 & 4 Ward Detail Drawer) */}
-                      <AnimatePresence>
-                        {selectedWard && (
-                          <WardDetailDrawer
-                            ward={selectedWard}
-                            onClose={() => setSelectedWard(null)}
-                            onExecuteProtocol={handleExecuteProtocol}
-                            onOpenLogEventModal={(w) => {
-                              setSelectedWard(w);
-                              setIsLogEventModalOpen(true);
-                            }}
-                            onOpenLogsModal={() => setIsLogsModalOpen(true)}
-                            forecastDayOffset={forecastDayOffset}
-                            onOpenForecastView={() => handleNavigate('forecast')}
-                          />
-                        )}
-                      </AnimatePresence>
+            {/* Live ML Prediction Panel (XGBoost Heatwave Alert Predictor) */}
+            {isMlPanelOpen ? (
+              <div
+                className={`absolute bottom-4 z-30 w-[360px] max-w-[calc(100vw-2rem)] max-h-[78vh] overflow-y-auto rounded-2xl border border-[#263149] bg-[#0d111b]/95 backdrop-blur-xl shadow-2xl p-4 transition-all duration-300 ${
+                  selectedWard && viewMode === 'map' ? 'right-4 md:right-[455px]' : 'right-4'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse shrink-0" />
+                    <div>
+                      <div className="text-[10.5px] uppercase tracking-[0.18em] text-[#64748b] font-medium font-mono">
+                        ML Heatwave Engine
+                      </div>
+                      <div className="text-sm font-semibold text-white">
+                        XGBoost Alert Predictor
+                      </div>
                     </div>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#162033] text-[#93c5fd] font-mono border border-blue-500/20">
+                      51 FEATURES
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsMlPanelOpen(false)}
+                      className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                      title="Minimize Predictor"
+                      aria-label="Minimize Predictor"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">close</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    ['Temperature_Mean_C', 'Mean Temp °C'],
+                    ['Temperature_Max_C', 'Max Temp °C'],
+                    ['Temperature_Min_C', 'Min Temp °C'],
+                    ['Relative_Humidity_Mean', 'Humidity %'],
+                    ['Dew_Point_Mean_C', 'Dew Point °C'],
+                    ['Precipitation_Sum_mm', 'Rain mm'],
+                    ['Pressure_msl_Mean_hPa', 'Pressure hPa'],
+                    ['Wind_Speed_kmh', 'Wind km/h'],
+                    ['Wind_Direction_Dominant_deg', 'Wind Dir °'],
+                    ['Wet_Bulb_Temp_C', 'Wet Bulb °C'],
+                    ['Heat_Index_C', 'Heat Index °C'],
+                    ['WBGT_C', 'WBGT °C'],
+                  ].map(([key, label]) => (
+                    <label key={key} className="text-[10px] text-[#94a3b8] flex flex-col">
+                      <span>{label}</span>
+                      <input
+                        type="number"
+                        step="any"
+                        value={mlInputs[key as keyof typeof mlInputs]}
+                        onChange={(e) =>
+                          setMlInputs(prev => ({
+                            ...prev,
+                            [key]: Number(e.target.value),
+                          }))
+                        }
+                        className="mt-1 w-full rounded-lg border border-[#263149] bg-[#090d15] px-2.5 py-1.5 text-xs text-white outline-none focus:border-[#3b82f6] transition-colors"
+                      />
+                    </label>
+                  ))}
+                </div>
+
+                <div className="mt-3 rounded-lg bg-[#090d15] border border-[#1e293b] px-3 py-2 flex items-center justify-between">
+                  <div>
+                    <div className="text-[10px] text-[#64748b]">Prediction target</div>
+                    <div className="text-xs text-white font-medium">
+                      {currentRegion.state} • {new Date().getFullYear()} • Month {new Date().getMonth() + 1}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMlInputs({
+                        Temperature_Mean_C: 36,
+                        Temperature_Max_C: 45,
+                        Temperature_Min_C: 29,
+                        Relative_Humidity_Mean: 60,
+                        Dew_Point_Mean_C: 24,
+                        Precipitation_Sum_mm: 0,
+                        Pressure_msl_Mean_hPa: 998,
+                        Wind_Speed_kmh: 8,
+                        Wind_Direction_Dominant_deg: 110,
+                        Wet_Bulb_Temp_C: 30,
+                        Heat_Index_C: 50,
+                        WBGT_C: 34,
+                      });
+                    }}
+                    className="text-[10.5px] text-blue-400 hover:text-blue-300 underline underline-offset-2 cursor-pointer"
+                  >
+                    Heatwave Preset
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={runMLPrediction}
+                  disabled={mlLoading}
+                  className="mt-3 w-full rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] active:bg-[#1e40af] disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2.5 text-xs font-semibold text-white transition flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 cursor-pointer"
+                >
+                  {mlLoading ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Running XGBoost...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined text-[16px]">bolt</span>
+                      <span>Run Heatwave Prediction</span>
+                    </>
                   )}
+                </button>
+
+                {mlResult && (
+                  <div className={`mt-3 rounded-xl border p-3 transition-all ${
+                    mlResult.Alert_Status === 'Alert'
+                      ? 'border-red-500/50 bg-red-500/10'
+                      : 'border-emerald-500/40 bg-emerald-500/10'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] uppercase tracking-wider text-[#94a3b8] font-medium font-mono">
+                        Model Result
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-black/40 text-[#94a3b8] font-mono border border-white/[0.06]">
+                        {mlResult.Model}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex items-end justify-between">
+                      <div>
+                        <div className={`text-xl font-bold ${
+                          mlResult.Alert_Status === 'Alert' ? 'text-red-400' : 'text-emerald-400'
+                        }`}>
+                          {mlResult.Alert_Status}
+                        </div>
+                        <div className="text-[11px] text-[#94a3b8] mt-1">
+                          Confidence: <span className="text-white font-medium">{mlResult.Prediction_Confidence}</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-white">
+                          {mlResult.Alert_Probability_Percent}%
+                        </div>
+                        <div className="text-[10px] text-[#64748b]">alert probability</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsMlPanelOpen(true)}
+                className={`absolute bottom-4 z-30 flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-blue-500/40 bg-[#0d111b]/95 backdrop-blur-md shadow-2xl hover:bg-[#162033] hover:border-blue-500 text-xs text-white transition group cursor-pointer ${
+                  selectedWard && viewMode === 'map' ? 'right-4 md:right-[455px]' : 'right-4'
+                }`}
+                title="Open XGBoost ML Predictor"
+              >
+                <span className="w-2 h-2 rounded-full bg-blue-400 animate-ping shrink-0" />
+                <span className="material-symbols-outlined text-[16px] text-blue-400 group-hover:scale-110 transition-transform">bolt</span>
+                <span className="font-semibold tracking-wide">XGBoost ML Predictor</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono">51 FEAT</span>
+              </button>
+            )}
+
+            {/* View Switching */}
+            {(viewMode === 'dashboard' || viewMode === 'overview') && (
+              <DashboardOverview
+                currentRegion={currentRegion}
+                wards={wards}
+                alerts={alerts}
+                onNavigate={handleNavigate}
+                onSelectWard={handleSelectWard}
+                onOpenDeployModal={() => setIsDeployModalOpen(true)}
+              />
+            )}
+
+            {viewMode === 'map' && (
+              <div className="flex-1 flex relative overflow-hidden">
+                <InteractiveMap
+                  wards={wards}
+                  selectedWard={selectedWard}
+                  onSelectWard={handleSelectWard}
+                  sensors={sensors}
+                  forecastDayOffset={forecastDayOffset}
+                  onForecastDayChange={setForecastDayOffset}
+                  currentRegion={currentRegion}
+                  onDetectLocation={detectUserLocation}
+                  isLocating={isLocating}
+                  userLocationName={userLocationName}
+                  onOpenForecastView={() => handleNavigate('forecast')}
+                />
+
+                {/* Right Drawer (Ward Detail Drawer) */}
+                {selectedWard && (
+                  <WardDetailDrawer
+                    ward={selectedWard}
+                    onClose={() => setSelectedWard(null)}
+                    onExecuteProtocol={handleExecuteProtocol}
+                    onOpenLogEventModal={(w) => {
+                      setSelectedWard(w);
+                      setIsLogEventModalOpen(true);
+                    }}
+                    onOpenLogsModal={() => setIsLogsModalOpen(true)}
+                    forecastDayOffset={forecastDayOffset}
+                    onOpenForecastView={() => handleNavigate('forecast')}
+                  />
+                )}
+              </div>
+            )}
 
             {viewMode === 'forecast' && (
               <WeatherForecastPanel
@@ -409,7 +626,7 @@ export default function App() {
               />
             )}
 
-            {(viewMode === 'historical' || viewMode === 'history') && (
+            {(viewMode === 'history' || viewMode === 'historical') && (
               <HistoricalAnalysisView
                 currentRegion={currentRegion}
                 regions={ALL_INDIA_REGIONS}
@@ -422,10 +639,7 @@ export default function App() {
               <UrbanHeatIslandView
                 currentRegion={currentRegion}
                 wards={wards}
-                onSelectWard={(w) => {
-                  setSelectedWard(w);
-                  setViewMode('map');
-                }}
+                onSelectWard={handleSelectWard}
                 onNavigate={handleNavigate}
               />
             )}
@@ -434,10 +648,7 @@ export default function App() {
               <VulnerabilityView
                 currentRegion={currentRegion}
                 wards={wards}
-                onSelectWard={(w) => {
-                  setSelectedWard(w);
-                  setViewMode('map');
-                }}
+                onSelectWard={handleSelectWard}
                 onOpenDeployModal={() => setIsDeployModalOpen(true)}
                 onNavigate={handleNavigate}
               />
@@ -447,18 +658,6 @@ export default function App() {
               <InfrastructureView
                 currentRegion={currentRegion}
                 onOpenDeployModal={() => setIsDeployModalOpen(true)}
-                onNavigate={handleNavigate}
-              />
-            )}
-
-            {viewMode === 'analytics' && (
-              <AnalyticsView
-                wards={wards}
-                currentRegion={currentRegion}
-                onSelectWard={(w) => {
-                  setSelectedWard(w);
-                  setViewMode('map');
-                }}
                 onNavigate={handleNavigate}
               />
             )}
@@ -479,7 +678,19 @@ export default function App() {
               />
             )}
 
-            {(viewMode === 'sources' || viewMode === 'datasources') && (
+            {viewMode === 'analytics' && (
+              <AnalyticsView
+                wards={wards}
+                currentRegion={currentRegion}
+                onSelectWard={(w) => {
+                  setSelectedWard(w);
+                  setViewMode('map');
+                }}
+                onNavigate={handleNavigate}
+              />
+            )}
+
+            {(viewMode === 'datasources' || viewMode === 'sources') && (
               <DataSourcesView onNavigate={handleNavigate} />
             )}
 
@@ -494,68 +705,56 @@ export default function App() {
                 onNavigate={handleNavigate}
               />
             )}
-                </motion.div>
-              </AnimatePresence>
-            </div>
           </div>
         </div>
       )}
 
       {/* Emergency Helpline & Dispatch Modal */}
-      <AnimatePresence>
-        {helplineModalType && (
-          <EmergencyHelplineModal
-            type={helplineModalType}
-            currentRegion={currentRegion}
-            wards={wards}
-            onClose={() => setHelplineModalType(null)}
-            onDispatchSuccess={(msg) => showToast(msg)}
-          />
-        )}
-      </AnimatePresence>
+      {helplineModalType && (
+        <EmergencyHelplineModal
+          type={helplineModalType}
+          currentRegion={currentRegion}
+          wards={wards}
+          onClose={() => setHelplineModalType(null)}
+          onDispatchSuccess={(msg) => showToast(msg)}
+        />
+      )}
 
       {/* Global Modals */}
-      <AnimatePresence>
-        {isDeployModalOpen && (
-          <DeployResponseModal
-            wards={wards}
-            onClose={() => setIsDeployModalOpen(false)}
-            onConfirmDeploy={handleConfirmDeploy}
-          />
-        )}
-      </AnimatePresence>
+      {isDeployModalOpen && (
+        <DeployResponseModal
+          wards={wards}
+          onClose={() => setIsDeployModalOpen(false)}
+          onConfirmDeploy={handleConfirmDeploy}
+        />
+      )}
 
-      <AnimatePresence>
-        {isLogEventModalOpen && (
-          <LogEventModal
-            ward={selectedWard}
-            operatorName={operatorName}
-            onClose={() => setIsLogEventModalOpen(false)}
-            onSaveLog={handleSaveLogEvent}
-          />
-        )}
-      </AnimatePresence>
+      {isLogEventModalOpen && (
+        <LogEventModal
+          ward={selectedWard}
+          operatorName={operatorName}
+          onClose={() => setIsLogEventModalOpen(false)}
+          onSaveLog={handleSaveLogEvent}
+        />
+      )}
 
-      <AnimatePresence>
-        {isLogsModalOpen && (
-          <LogsModal
-            logs={logs}
-            onClose={() => setIsLogsModalOpen(false)}
-            onClearLogs={() => {
-              setLogs([]);
-              showToast('Local session logs cleared.');
-            }}
-          />
-        )}
-      </AnimatePresence>
+      {isLogsModalOpen && (
+        <LogsModal
+          logs={logs}
+          onClose={() => setIsLogsModalOpen(false)}
+          onClearLogs={() => {
+            setLogs([]);
+            showToast('Local session logs cleared.');
+          }}
+        />
+      )}
 
-      <AnimatePresence>
-        {isScientificAuditOpen && (
-          <ScientificAuditModal
-            onClose={() => setIsScientificAuditOpen(false)}
-          />
-        )}
-      </AnimatePresence>
+      {isScientificAuditOpen && (
+        <ScientificAuditModal
+          result={null}
+          onClose={() => setIsScientificAuditOpen(false)}
+        />
+      )}
     </div>
   );
 }

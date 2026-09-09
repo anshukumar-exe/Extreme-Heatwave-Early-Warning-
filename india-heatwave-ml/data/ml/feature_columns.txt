@@ -1,0 +1,51 @@
+Temperature_Mean_C
+Temperature_Max_C
+Temperature_Min_C
+Relative_Humidity_Mean
+Dew_Point_Mean_C
+Precipitation_Sum_mm
+Pressure_msl_Mean_hPa
+Wind_Speed_kmh
+Wind_Direction_Dominant_deg
+Wet_Bulb_Temp_C
+Heat_Index_C
+WBGT_C
+Year_numeric
+Month_sin
+Month_cos
+State_Andaman and Nicobar Islands
+State_Andhra Pradesh
+State_Arunachal Pradesh
+State_Assam
+State_Bihar
+State_Chandigarh
+State_Chhattisgarh
+State_Dadra and Nagar Haveli and Daman and Diu
+State_Delhi
+State_Goa
+State_Gujarat
+State_Haryana
+State_Himachal Pradesh
+State_Jammu and Kashmir
+State_Jharkhand
+State_Karnataka
+State_Kerala
+State_Ladakh
+State_Lakshadweep
+State_Madhya Pradesh
+State_Maharashtra
+State_Manipur
+State_Meghalaya
+State_Mizoram
+State_Nagaland
+State_Odisha
+State_Puducherry
+State_Punjab
+State_Rajasthan
+State_Sikkim
+State_Tamil Nadu
+State_Telangana
+State_Tripura
+State_Uttar Pradesh
+State_Uttarakhand
+State_West Bengal

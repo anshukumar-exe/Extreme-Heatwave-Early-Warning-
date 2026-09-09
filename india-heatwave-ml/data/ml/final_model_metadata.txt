@@ -1,0 +1,21 @@
+INDIA HEATWAVE ALERT MODEL
+==========================
+
+Model: XGBoost
+Target: Alert_Status
+Labels: No Alert / Alert
+Test period: 2024-2025
+Selection criterion: F1, then Recall, ROC-AUC, Precision
+
+FINAL TEST METRICS
+Accuracy : 0.984954
+Precision: 0.897959
+Recall   : 0.846154
+F1       : 0.871287
+ROC-AUC  : 0.996803
+
+CONFUSION MATRIX
+True Negative : 807
+False Positive: 5
+False Negative: 8
+True Positive : 44

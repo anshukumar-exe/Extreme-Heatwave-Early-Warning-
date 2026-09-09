@@ -361,7 +361,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="mt-5 pt-4 border-t border-[#242e42] flex items-center justify-between text-[12.5px]">
                 <span className="text-[#94a3b8]">Validated with NCDC Hospital Records</span>
                 <button 
-                  onClick={() => onNavigate('heatwave_analysis')}
+                  onClick={() => onNavigate('heatwave')}
                   className="text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-1"
                 >
                   <span>Analyze Heatwave</span>

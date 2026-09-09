@@ -1,22 +1,24 @@
-export type ViewMode = 
-  | 'landing' 
-  | 'auth' 
+export type ViewMode =
+  | 'landing'
+  | 'auth'
   | 'dashboard'
-  | 'map' 
-  | 'forecast' 
-  | 'thermal_stress' 
-  | 'heatwave' 
-  | 'history' 
-  | 'analytics' 
-  | 'uhi' 
-  | 'vulnerability' 
-  | 'infrastructure' 
-  | 'alerts' 
-  | 'datasources' 
-  | 'admin' 
-  | 'settings' 
+  | 'overview'
+  | 'map'
+  | 'forecast'
+  | 'thermal_stress'
+  | 'heatwave'
+  | 'history'
+  | 'historical'
+  | 'analytics'
+  | 'uhi'
+  | 'vulnerability'
+  | 'infrastructure'
+  | 'alerts'
+  | 'sources'
+  | 'datasources'
+  | 'admin'
+  | 'settings'
   | 'logs';
-
 export interface InfrastructureItem {
   id: string;
   name: string;
