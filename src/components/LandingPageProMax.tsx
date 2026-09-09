@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { ViewMode, Region, WardData } from '../types';
 import { HelplineType } from './Modals/EmergencyHelplineModal';
 import { ThermometerLogo } from './ThermometerLogo';
+import heroBg from '../assets/hero-bg.png';
 
 interface LandingPageProMaxProps {
   onNavigate: (view: ViewMode) => void;
@@ -75,13 +76,59 @@ export const LandingPageProMax: React.FC<LandingPageProMaxProps> = ({
   ];
 
   return (
-    <div className="min-h-screen bg-[#070a12] text-[#f1f5f9] flex flex-col relative overflow-x-hidden selection:bg-amber-500 selection:text-slate-950" id="taapraksha-promax-landing">
-      {/* Subtle Ambient Glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-to-b from-blue-600/10 via-indigo-600/5 to-transparent blur-[140px] pointer-events-none -z-10"></div>
+    <div className="min-h-screen bg-[#070a12] text-[#f1f5f9] flex flex-col relative z-0 overflow-x-hidden selection:bg-amber-500 selection:text-slate-950" id="taapraksha-promax-landing">
+      {/* Atmospheric Hero Background: heat-glow mesh + thermal contour lines + fine grid + hero image */}
+      <div className="absolute inset-x-0 top-0 h-[1400px] overflow-hidden pointer-events-none -z-10" aria-hidden="true">
+        {/* Base radial wash, darkest at the edges */}
+        <div
+          className="absolute inset-0"
+          style={{ background: 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(15,23,42,0.9), #070a12 65%)' }}
+        ></div>
+
+        {/* Hero image: burning-earth motif, faded into the dark background */}
+        <div
+          className="absolute top-[220px] left-[-320px] w-[900px] h-[900px] sm:w-[1100px] sm:h-[1100px]"
+          style={{
+            backgroundImage: `url(${heroBg})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: 0.55,
+            maskImage: 'radial-gradient(ellipse 55% 55% at 38% 38%, black 35%, transparent 72%)',
+            WebkitMaskImage: 'radial-gradient(ellipse 55% 55% at 38% 38%, black 35%, transparent 72%)',
+          }}
+        ></div>
+
+        {/* Cool accent glow, upper center (brand blue) */}
+        <div
+          className="absolute top-[-120px] left-1/2 -translate-x-1/2 w-[900px] h-[500px] blur-[130px]"
+          style={{ background: 'linear-gradient(to bottom, rgba(37,99,235,0.14), rgba(79,70,229,0.06), transparent)' }}
+        ></div>
+
+        {/* Warm heat-glow blob, lower-right only — left side now carried by the hero image */}
+        <div
+          className="absolute bottom-[-180px] right-[-120px] w-[560px] h-[560px] blur-[80px]"
+          style={{ background: 'radial-gradient(circle, rgba(239,68,68,0.20), transparent 70%)' }}
+        ></div>
+
+        {/* Thermal contour lines, faint, evoking an isotherm / heat-map read */}
+        <svg className="absolute inset-0 w-full h-full opacity-[0.09]" viewBox="0 0 1200 1400" preserveAspectRatio="none">
+          <path d="M -50 620 Q 300 520 600 600 T 1250 560" stroke="#f97316" strokeWidth="1.5" fill="none" />
+          <path d="M -50 700 Q 320 580 620 680 T 1250 640" stroke="#ef4444" strokeWidth="1.5" fill="none" />
+          <path d="M -50 780 Q 340 660 640 760 T 1250 720" stroke="#fbbf24" strokeWidth="1.5" fill="none" />
+        </svg>
+      </div>
 
       {/* Centered Main Brand Header */}
       <header className="w-full bg-[#070a12]/90 sticky top-0 z-40 backdrop-blur-md">
-        <div className="w-full max-w-5xl mx-auto px-4 sm:px-8">
+        <div className="w-full max-w-5xl mx-auto px-4 sm:px-8 relative">
+          <button
+            onClick={() => onNavigate('auth')}
+            className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-[12.5px] font-medium text-slate-300 hover:text-white bg-[#141b2b] hover:bg-[#1c263b] border border-white/10 px-3.5 py-2 rounded-lg transition-colors"
+            id="header-sign-in-btn"
+          >
+            <span className="material-symbols-outlined text-[16px]">login</span>
+            <span>Sign In</span>
+          </button>
           <div className="py-3.5 border-b border-white/[0.08] flex items-center justify-center">
             <div 
               onClick={() => onNavigate('landing')}
